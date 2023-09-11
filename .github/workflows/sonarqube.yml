@@ -1,0 +1,39 @@
+name: SonarQube Analysis
+on:
+  push:
+    branches:
+      - frontend
+jobs:
+  sonarqube-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test
+      - name: SonarQube Scan
+        run: |
+          npm run sonar-scanner
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Check SonarQube Quality Gate
+        run: |
+          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=YOUR_PROJECT_KEY" | jq -r .projectStatus.status)
+          if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
+            echo "SonarQube quality gate failed."
+            exit 1
+          fi
+      - name: Create and push a new branch
+        run: |
+          BRANCH_NAME="check-sonar-frontend"
+          git checkout -b "$BRANCH_NAME"
+          git add .
+          git commit -m "Automatic code quality check passed."
+          git push origin "$BRANCH_NAME"
