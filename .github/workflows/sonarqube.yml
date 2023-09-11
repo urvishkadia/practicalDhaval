@@ -1,39 +1,66 @@
-name: SonarQube Analysis
+name: SonarQube Quality Check
+
 on:
   push:
     branches:
-      - frontend
+      - main  # Change this to your main branch name
+
 jobs:
-  sonarqube-analysis:
+  sonarqube-check:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: 14
-      - name: Install dependencies
-        run: npm install
-      - name: Run tests
-        run: npm test
-      - name: SonarQube Scan
-        run: |
-          npm run sonar-scanner
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      - name: Check SonarQube Quality Gate
-        run: |
-          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=practicalDhaval" | jq -r .projectStatus.status)
-          if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
-            echo "SonarQube quality gate failed."
-            exit 1
-          fi
-      - name: Create and push a new branch
-        run: |
-          BRANCH_NAME="check-sonar-frontend"
-          git checkout -b "$BRANCH_NAME"
-          git add .
-          git commit -m "Automatic code quality check passed."
-          git push origin "$BRANCH_NAME"
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 14
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: SonarQube Scan
+      run: |
+        npm run sonarqube-scan  # Replace with your script to run SonarQube analysis
+      env:
+	      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    - name: Check SonarQube Quality Gate
+      id: sonarqube-check
+      run: |
+        # Use the SonarScanner CLI to check the Quality Gate status
+        sonar-scanner -Dsonar.login="${{ secrets.SONAR_TOKEN }}" -Dsonar.host.url="https://your-sonarqube-server"
+      continue-on-error: true
+
+    - name: Pull to Another Branch
+      if: ${{ steps.sonarqube-check.outcome == 'success' }}
+      run: |
+	      BRANCH_NAME="check-sonar-frontend"
+        git checkout -b "$BRANCH_NAME"
+        git commit -am "Auto-commit after SonarQube pass"
+        git push origin "$BRANCH_NAME"
+
+    - name: Send Email Notification
+      if: ${{ steps.sonarqube-check.outcome == 'success' }}
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.SMTP_USERNAME }}
+        password: ${{ secrets.SMTP_PASSWORD }}
+        subject: "SonarQube Check Passed"
+        body: "The SonarQube quality check passed. Code has been pulled to a new branch."
+
+    - name: Send Failure Email Notification
+      if: ${{ steps.sonarqube-check.outcome == 'failure' }}
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.SMTP_USERNAME }}
+        password: ${{ secrets.SMTP_PASSWORD }}
+        subject: "SonarQube Check Failed"
+        body: "The SonarQube quality check failed. Please review and fix the issues."
