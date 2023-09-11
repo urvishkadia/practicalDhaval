@@ -25,7 +25,7 @@ jobs:
       run: |
         npm run sonarqube-scan  # Replace with your script to run SonarQube analysis
       env:
-	      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     - name: Check SonarQube Quality Gate
@@ -38,7 +38,7 @@ jobs:
     - name: Pull to Another Branch
       if: ${{ steps.sonarqube-check.outcome == 'success' }}
       run: |
-	      BRANCH_NAME="check-sonar-frontend"
+        BRANCH_NAME="check-sonar-frontend"
         git checkout -b "$BRANCH_NAME"
         git commit -am "Auto-commit after SonarQube pass"
         git push origin "$BRANCH_NAME"
