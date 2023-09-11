@@ -25,7 +25,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - name: Check SonarQube Quality Gate
         run: |
-          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=YOUR_PROJECT_KEY" | jq -r .projectStatus.status)
+          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=practicalDhaval" | jq -r .projectStatus.status)
           if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
             echo "SonarQube quality gate failed."
             exit 1
