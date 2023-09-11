@@ -1,10 +1,8 @@
 name: SonarQube Quality Check
-
 on:
   push:
     branches:
-      - main  # Change this to your main branch name
-
+      - frontend
 jobs:
   sonarqube-check:
     runs-on: ubuntu-latest
